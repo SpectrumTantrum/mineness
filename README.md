@@ -78,6 +78,8 @@ Selections persist in `.runtime/<provider>/model.json`. Human players can use th
 
 Keep requests within survival abilities. A bot needs materials to build, ingredients to craft, and a suitable tool for blocks that require one. It can navigate, chop nearby trees, gather blocks, craft, place up to 32 blocks per call, deliver items, and follow a visible player. Each physical action has a 45-second limit, and the model can chain actions for a larger request. Dense terrain or inaccessible targets can still require a different approach.
 
+The models see structured tool results. `look_around` includes leaves and leaf litter, and its `inspect` argument reports exact blocks at requested coordinates, including air. Before building, inspect the footprint and the blocks underneath it. `place_blocks` clears grass and leaf litter at the requested positions, preserves solid blocks, and skips blocks already placed correctly. High walls and roofs can require temporary access steps made from the bot's materials.
+
 Skin setup uses a temporary connection for each body. **Apply skins before starting the agents.** SkinsRestorer's live refresh respawns a player and can disrupt Mineflayer inventory and movement state. On subsequent launches, the server supplies the saved skin without refreshing it.
 
 ## How it works
@@ -101,6 +103,7 @@ Press Ctrl+C in the launcher terminal to disconnect its teammates. Their Minecra
 ```bash
 npm test
 npm run test:game
+node scripts/test-building.mjs
 node scripts/test-agents.mjs claude codex grok cursor
 node scripts/test-model-command.mjs
 ```
@@ -109,6 +112,8 @@ node scripts/test-model-command.mjs
 
 `test-agents.mjs` requires the selected CLI teammates to be running. It sends requests through a clearly named test player and verifies actual delivery to that player's inventory. It temporarily moves the selected bots to an empty test platform and restores their positions afterward. Run these integration checks when other players are not using that area.
 
+`test-building.mjs` uses a separate test bot and an empty temporary platform. It checks bulk crafting against server inventory, terrain inspection, building over leaf litter, a complete small shelter with a roof, and harvesting a tree beside an isolated canopy log. It removes the platform afterward.
+
 The `/model` plugin's Java source and compiled jar are in `mc-server/model-command/`. Setup installs the jar. To rebuild it, use a JDK 21 or newer and run `npm run build:plugin` after Paper has started once and extracted its libraries. Restart Paper after rebuilding. The launcher and server share the local `.runtime` directory.
 
 `test-model-command.mjs` sends real player slash commands, temporarily switches Cursor's reasoning effort, verifies that the other bots stay connected, and restores Cursor's original model. Run it when Cursor is idle.
@@ -116,6 +121,8 @@ The `/model` plugin's Java source and compiled jar are in `mc-server/model-comma
 ## Sources and attribution
 
 The starting Mineflayer/MCP connection code came from [yuniko-software/minecraft-mcp-server](https://github.com/yuniko-software/minecraft-mcp-server), under Apache-2.0. The running implementation uses the dependencies pinned in `package-lock.json`; the old reference checkout is not required. See `LICENSE` and `NOTICE`.
+
+The small client collision margin follows the proposed [Minecraft 1.21.x pathfinder fix](https://github.com/PrismarineJS/mineflayer-pathfinder/pull/364). It prevents the bot from aligning exactly with block edges, where server collision checks can reject its movement.
 
 CLI configuration follows the official [Claude Code CLI reference](https://code.claude.com/docs/en/cli-reference), [Codex configuration reference](https://developers.openai.com/codex/config-reference/), [Grok headless documentation](https://docs.x.ai/build/cli/headless-scripting), and [Cursor CLI permissions](https://cursor.com/docs/cli/reference/permissions). Skins use [SkinsRestorer](https://skinsrestorer.net/docs/installation/quick-start) and the separate [Mineness skins repository](https://github.com/SpectrumTantrum/mineness-skins).
 

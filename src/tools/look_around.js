@@ -1,12 +1,13 @@
 import { z } from "zod";
-import { toolResult, fmtPos } from "../bot.js";
+import { toolResult } from "../bot.js";
+import { Vec3 } from "vec3";
 
 export const DEFAULT_RADIUS = 32;
 export const MAX_RADIUS = 64;
 
 export const LOOK_AROUND_DESCRIPTION = `Look around you in the Minecraft world and return ONE short prose summary plus compact structured state.
 
-Use this to see who is nearby, what biome you are in, the time of day, your health/food, a brief inventory, nearby players, hostile mobs, and notable blocks (ores, logs, chests, crafting stations). It is NOT a dump of every block. Do not ask the human what they see — look for yourself.`;
+Returns players, inventory, notable resources, leaves, and the exact blocks at your feet, head, and underneath. Counts are a limited nearby sample, not totals. For building, pass inspect with the planned ground, floor, walls, and roof coordinates to check their exact block names and support before placing. A missing block in the resource summary does NOT mean air. Do not ask the human what they see — inspect it yourself.`;
 
 const NOTABLE_EXACT = new Set([
   "chest",
@@ -164,6 +165,9 @@ function notableBlocks(bot, radius) {
       count: 48,
       matching: (block) => isNotableBlock(block?.name),
     });
+    // Sample foliage separately so a dense canopy cannot hide every log.
+    hits.push(...bot.findBlocks({ point: bot.entity.position, maxDistance: radius, count: 16,
+      matching: (block) => block?.name?.endsWith("_leaves") || block?.name === "leaf_litter" }));
   } catch {
     hits = [];
   }
@@ -237,8 +241,10 @@ export function registerLookAround(mcp, bot, actions) {
         .max(MAX_RADIUS)
         .default(DEFAULT_RADIUS)
         .describe("How far to look, in blocks. Default 32, max 64."),
+      inspect: z.array(z.object({ x: z.number().int(), y: z.number().int().min(-64).max(319), z: z.number().int() }))
+        .min(1).max(64).optional().describe("Exact block positions to inspect within 64 blocks. Use before building; includes air and ground vegetation."),
     },
-    async ({ radius }) => {
+    async ({ radius, inspect }) => {
       const r = clampRadius(radius ?? DEFAULT_RADIUS);
       if (!bot.entity || !bot.minenessReady) {
         return toolResult({
@@ -248,6 +254,11 @@ export function registerLookAround(mcp, bot, actions) {
       }
       const position = floorPos(bot.entity.position);
       const timeOfDay = bot.time?.timeOfDay ?? 0;
+      const inspected = (inspect ?? [-1, 0, 1].map(y => bot.entity.position.floored().offset(0, y, 0))).map(p => {
+        const position = new Vec3(p.x, p.y, p.z);
+        const block = position.distanceTo(bot.entity.position) <= MAX_RADIUS ? bot.blockAt(position) : null;
+        return { position: p, name: block?.name ?? "unknown", solid: block?.boundingBox === "block" };
+      });
       const state = {
         success: true,
         activity: actions.state(),
@@ -260,6 +271,7 @@ export function registerLookAround(mcp, bot, actions) {
         players: nearbyPlayers(bot, r),
         hostile_mobs: nearbyHostiles(bot, r),
         notable_blocks: notableBlocks(bot, r),
+        inspected_blocks: inspected,
         inventory: inventoryBrief(bot),
       };
       state.summary = prose(state);

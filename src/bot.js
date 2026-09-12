@@ -23,6 +23,10 @@ export function createBot(config, log) {
     bot.minenessReady = true;
     log("info", `spawned at ${fmtPos(bot)}`);
     try {
+      // 1.21.11 rejects movement at exact block-edge alignment. Leave a tiny
+      // client-side gap: https://github.com/PrismarineJS/mineflayer-pathfinder/pull/364
+      bot.physics.playerHalfWidth = 0.30001;
+      bot.physics.playerHeight = 1.80001;
       const movements = new Movements(bot);
       movements.canDig = false;
       movements.allow1by1towers = false;
