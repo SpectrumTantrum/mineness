@@ -6,6 +6,8 @@ Claude, Codex, Grok, and Cursor as Minecraft teammates. Each coding-agent CLI co
 
 ## Run locally
 
+The included [demo server](mc-server/README.md) provides the example configuration, teammate datapack, and `/model` plugin. Run everything from this `mineness` folder.
+
 Requires Java 21 or newer, Node.js 22.12 or newer, and Minecraft Java Edition **1.21.11**. Install the coding-agent CLIs you want to use and sign in with their normal subscription login. No model API key is required by Mineness.
 
 ```bash
