@@ -1,0 +1,11 @@
+Mineness
+Copyright 2026 Torres
+
+This product includes software developed by Yuniko Software
+(https://github.com/yuniko-software/minecraft-mcp-server), licensed under
+the Apache License, Version 2.0.
+
+We fork that server for Mineflayer plumbing, `--username` spawn, stdio
+boilerplate and dependency pins. The wait_for_mention loop, coarse tools,
+chat routing, stop listener, and JSONL log are original to
+Mineness.

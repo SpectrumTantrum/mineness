@@ -1,0 +1,33 @@
+{
+  "name": "mineness",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "MCP server that gives coding-agent CLIs a Minecraft body",
+  "bin": {
+    "mineness": "src/server.js"
+  },
+  "scripts": {
+    "start": "node src/server.js",
+    "test": "node --test test/*.test.js",
+    "server": "bash mc-server/start.sh",
+    "setup": "node scripts/setup.mjs",
+    "play": "node scripts/play.mjs",
+    "skins": "node scripts/skins.mjs",
+    "test:game": "node scripts/test-game.mjs"
+  },
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.27.1",
+    "minecraft-data": "^3.105.0",
+    "mineflayer": "^4.35.0",
+    "mineflayer-collectblock": "^1.6.0",
+    "mineflayer-pathfinder": "^2.4.2",
+    "mineflayer-tool": "^1.2.0",
+    "vec3": "^0.1.8",
+    "yargs": "^18.0.0",
+    "zod": "^3.25.76"
+  }
+}
