@@ -81,7 +81,7 @@ for (const name of selected) {
         const enabled = spawnSync(command, ['--workspace', cwd, 'mcp', 'enable', 'mineness'], { cwd, encoding: 'utf8' });
         if (enabled.status !== 0) throw new Error(`Cursor MCP approval failed: ${enabled.stderr || enabled.stdout}`);
       }
-      args = ['-p', '--output-format', 'stream-json', '--workspace', cwd, '--trust', '--sandbox', 'enabled', prompt];
+      args = ['-p', '--model', 'cursor-grok-4.6-high', '--output-format', 'stream-json', '--workspace', cwd, '--trust', '--sandbox', 'enabled', prompt];
     }
     if (prepareOnly) { console.log(`Prepared ${name} in ${cwd}`); continue; }
     const logFile = join(runtime, `${name}.log`);

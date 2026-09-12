@@ -32,6 +32,8 @@ npm run play -- claude codex grok cursor
 
 You can select one provider, for example `npm run play -- codex`. `npm run play` defaults to all four. Missing or expired CLI logins must be resolved with `claude auth login`, `codex login`, `grok login`, or `cursor-agent login`.
 
+Cursor_Bot uses Cursor Grok 4.6 with high reasoning, pinned as `cursor-grok-4.6-high` in the launcher.
+
 Grok requires one initial workspace trust decision. Prepare its configuration, open the isolated game workspace, accept its trust prompt, then quit Grok and start the launcher:
 
 ```bash
