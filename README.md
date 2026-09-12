@@ -32,7 +32,7 @@ npm run play -- claude codex grok cursor
 
 You can select one provider, for example `npm run play -- codex`. `npm run play` defaults to all four. Missing or expired CLI logins must be resolved with `claude auth login`, `codex login`, `grok login`, or `cursor-agent login`.
 
-Cursor_Bot uses Cursor Grok 4.6 with high reasoning, pinned as `cursor-grok-4.6-high` in the launcher.
+Cursor_Bot defaults to Cursor Grok 4.6 with high reasoning, `cursor-grok-4.6-high`.
 
 Grok requires one initial workspace trust decision. Prepare its configuration, open the isolated game workspace, accept its trust prompt, then quit Grok and start the launcher:
 
@@ -58,6 +58,21 @@ stop
 ```
 
 Full nametags such as `@Claude_Bot` also work. `@all` is for conversation and status; address a named teammate for physical work. A plain `stop` immediately stops every body. `@codex stop` stops just Codex. They wait for another request afterward.
+
+Use the server's `/model` command to inspect or change one teammate:
+
+```text
+/model @cursor
+/model @cursor grok-4.6 high
+/model @claude sonnet high
+/model @codex gpt-5.6-sol high
+/model @grok grok-4.6 high
+/model @cursor default
+```
+
+The format is `/model @bot [model-id] [effort]`. Model IDs must be supported by that bot's CLI and account. Without a model, it shows the configured model and connection status. `default` restores the project default. The command reconnects only the selected teammate, stops its current action, and preserves its Minecraft location and inventory. If the new model fails to connect, the launcher attempts to restore the previous one and reports the result in chat.
+
+Selections persist in `.runtime/<provider>/model.json`. Human players can use the command through the `mineness.model` permission, enabled by default on this local server.
 
 Keep requests within survival abilities. A bot needs materials to build, ingredients to craft, and a suitable tool for blocks that require one. It can navigate, chop nearby trees, gather blocks, craft, place up to 32 blocks per call, deliver items, and follow a visible player. Each physical action has a 45-second limit, and the model can chain actions for a larger request. Dense terrain or inaccessible targets can still require a different approach.
 
@@ -85,11 +100,16 @@ Press Ctrl+C in the launcher terminal to disconnect its teammates. Their Minecra
 npm test
 npm run test:game
 node scripts/test-agents.mjs claude codex grok cursor
+node scripts/test-model-command.mjs
 ```
 
-`npm test` checks routing, inbox behavior, cancellation, deadlines, and duplicate-body protection. `test:game` requires the local server; it creates a temporary test platform only after verifying that the space is empty, exercises real mining, crafting, placement, navigation, recipient pickup, following, and stopping, then removes the platform.
+`npm test` checks routing, inbox behavior, cancellation, deadlines, duplicate-body protection, and model switching with rollback. `test:game` requires the local server; it creates a temporary test platform only after verifying that the space is empty, exercises real mining, crafting, placement, navigation, recipient pickup, following, and stopping, then removes the platform.
 
 `test-agents.mjs` requires the selected CLI teammates to be running. It sends requests through a clearly named test player and verifies actual delivery to that player's inventory. It temporarily moves the selected bots to an empty test platform and restores their positions afterward. Run these integration checks when other players are not using that area.
+
+The `/model` plugin's Java source and compiled jar are in `mc-server/model-command/`. Setup installs the jar. To rebuild it, use a JDK 21 or newer and run `npm run build:plugin` after Paper has started once and extracted its libraries. Restart Paper after rebuilding. The launcher and server share the local `.runtime` directory.
+
+`test-model-command.mjs` sends real player slash commands, temporarily switches Cursor's reasoning effort, verifies that the other bots stay connected, and restores Cursor's original model. Run it when Cursor is idle.
 
 ## Sources and attribution
 

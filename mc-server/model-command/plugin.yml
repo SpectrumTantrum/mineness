@@ -1,0 +1,14 @@
+name: MinenessCommands
+version: '0.1.0'
+main: mineness.ModelCommand
+api-version: '1.21.11'
+description: Change a Mineness teammate's model from Minecraft.
+commands:
+  model:
+    description: Show or change a teammate's model.
+    usage: /model @bot [model-id] [effort]
+    permission: mineness.model
+permissions:
+  mineness.model:
+    description: Show and change teammate models on this local server.
+    default: true

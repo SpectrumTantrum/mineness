@@ -31,4 +31,5 @@ if (!existsSync(join(root, "mc-server/eula.txt"))) {
   console.log("Set eula=true in mc-server/eula.txt after accepting the Minecraft EULA.");
 }
 await cp(join(root, "mc-server/datapacks/mineness"), join(root, "mc-server/world/datapacks/mineness"), { recursive: true });
+await cp(join(root, "mc-server/model-command/MinenessCommands.jar"), join(root, "mc-server/plugins/MinenessCommands.jar"));
 console.log("Server files ready. Start with npm run server.");

@@ -1,4 +1,4 @@
-import { appendFileSync, mkdirSync, openSync, closeSync, readFileSync, writeFileSync, unlinkSync } from "node:fs";
+import { appendFileSync, mkdirSync, openSync, closeSync, readFileSync, writeFileSync, unlinkSync, renameSync } from "node:fs";
 import { dirname } from "node:path";
 
 export function lockBody(path) {
@@ -30,9 +30,16 @@ export function lockBody(path) {
   };
 }
 
-export function logToolCalls(mcp, username, path) {
+export function atomicJson(path, value) {
+  const temporary = `${path}.${process.pid}.tmp`;
+  writeFileSync(temporary, JSON.stringify(value), { mode: 0o600 });
+  renameSync(temporary, path);
+}
+
+export function logToolCalls(mcp, username, path, onCall = () => {}) {
   const register = mcp.tool.bind(mcp);
   mcp.tool = (name, description, schema, handler) => register(name, description, schema, async (args, extra) => {
+    onCall();
     const started = Date.now();
     let result;
     let error;

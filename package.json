@@ -14,6 +14,7 @@
     "setup": "node scripts/setup.mjs",
     "play": "node scripts/play.mjs",
     "skins": "node scripts/skins.mjs",
+    "build:plugin": "node scripts/build-plugin.mjs",
     "test:game": "node scripts/test-game.mjs"
   },
   "engines": {

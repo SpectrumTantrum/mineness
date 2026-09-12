@@ -1,10 +1,11 @@
 #!/usr/bin/env node
-import { spawn, spawnSync } from 'node:child_process';
-import { readFileSync, writeFileSync, mkdirSync, existsSync, openSync, closeSync } from 'node:fs';
+import { spawnSync } from 'node:child_process';
+import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { join } from 'node:path';
 import { homedir } from 'node:os';
 import { lockBody } from '../src/session.js';
+import { superviseModel } from '../src/model-control.js';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
 const providers = { claude: ['claude', 'Claude_Bot'], codex: ['codex', 'Codex_Bot'], grok: ['grok', 'Grok_Bot'], cursor: ['cursor-agent', 'Cursor_Bot'] };
@@ -15,13 +16,13 @@ const prepareOnly = process.argv.includes('--prepare');
 const runtime = join(root, '.runtime');
 mkdirSync(runtime, { recursive: true });
 const template = readFileSync(join(root, 'prompts/shared-operating-prompt.md'), 'utf8');
-const children = new Set();
+const sessions = new Set();
 let stopping = false;
-function stop() {
+async function stop() {
   if (stopping) return;
   stopping = true;
-  for (const child of children) { try { process.kill(-child.pid, 'SIGTERM'); } catch {} }
-  setTimeout(() => { for (const child of children) { try { process.kill(-child.pid, 'SIGKILL'); } catch {} } }, 3000).unref();
+  await Promise.allSettled([...sessions].map(session => session.stop()));
+  process.exit();
 }
 process.on('SIGINT', stop);
 process.on('SIGTERM', stop);
@@ -81,21 +82,12 @@ for (const name of selected) {
         const enabled = spawnSync(command, ['--workspace', cwd, 'mcp', 'enable', 'mineness'], { cwd, encoding: 'utf8' });
         if (enabled.status !== 0) throw new Error(`Cursor MCP approval failed: ${enabled.stderr || enabled.stdout}`);
       }
-      args = ['-p', '--model', 'cursor-grok-4.6-high', '--output-format', 'stream-json', '--workspace', cwd, '--trust', '--sandbox', 'enabled', prompt];
+      args = ['-p', '--output-format', 'stream-json', '--workspace', cwd, '--trust', '--sandbox', 'enabled', prompt];
     }
     if (prepareOnly) { console.log(`Prepared ${name} in ${cwd}`); continue; }
     const logFile = join(runtime, `${name}.log`);
-    const fd = openSync(logFile, 'a');
-    const child = spawn(command, args, { cwd, detached: true, stdio: ['ignore', fd, fd], env: { ...process.env, CLAUDE_CODE_ENABLE_TELEMETRY: '0' } });
-    closeSync(fd);
-    children.add(child);
+    sessions.add(superviseModel({ provider: name, command, args, cwd, logFile }));
     console.log(`${username}: starting ${command}; log ${logFile}`);
-    child.on('error', e => { unlock(); children.delete(child); console.error(`${name}: ${e.message}. Install the CLI and log in first.`); process.exitCode = 1; });
-    child.on('exit', (code, signal) => {
-      unlock();
-      children.delete(child);
-      if (!stopping) { console.error(`${username}: session ended (${signal || code}). Inspect ${logFile}, then restart it.`); if (code) process.exitCode = 1; }
-    });
   } catch (error) {
     unlock();
     console.error(`${name}: ${error.message}`);

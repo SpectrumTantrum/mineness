@@ -13,9 +13,10 @@ import { createInbox } from "./inbox.js";
 import { route } from "./routing.js";
 import { BOT_USERNAMES, MENTION, shortName } from "./routing.js";
 import { createActions } from "./actions.js";
-import { lockBody, logToolCalls } from "./session.js";
+import { lockBody, logToolCalls, atomicJson } from "./session.js";
 import { fileURLToPath } from "node:url";
 import { join } from "node:path";
+import { readFileSync } from "node:fs";
 import { registerSay } from "./tools/say.js";
 import { registerWaitForMention } from "./tools/wait_for_mention.js";
 import { registerLookAround } from "./tools/look_around.js";
@@ -39,6 +40,10 @@ const log = (level, msg) => {
 };
 
 const root = fileURLToPath(new URL("../", import.meta.url));
+const modelDirectory = join(root, ".runtime", shortName(config.username));
+let modelRunId;
+try { modelRunId = JSON.parse(readFileSync(join(modelDirectory, "model-launch.json"), "utf8")).runId; }
+catch (error) { if (error.code !== "ENOENT") throw error; }
 const unlock = lockBody(join(root, ".runtime", `${config.username}.pid`));
 process.on("exit", unlock);
 const bot = createBot(config, log);
@@ -100,7 +105,13 @@ bot.on("messagestr", (msg, position, _json, sender, verified) => {
 });
 
 const mcp = new McpServer({ name: "mineness", version: "0.1.0" });
-logToolCalls(mcp, config.username, join(root, "calls.jsonl"));
+let readyAnnounced = false;
+logToolCalls(mcp, config.username, join(root, "calls.jsonl"), () => {
+  if (!readyAnnounced && modelRunId) {
+    atomicJson(join(modelDirectory, "model-ready.json"), { runId: modelRunId });
+    readyAnnounced = true;
+  }
+});
 registerSay(mcp, bot);
 registerWaitForMention(mcp, inbox, actions, bot);
 registerLookAround(mcp, bot, actions);
